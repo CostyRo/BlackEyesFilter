@@ -3,39 +3,25 @@ import numpy as np
 from cv2 import cv2 as cv
 #import all necessary modules
 
-def getRGBValues():
+def get_RGB_values():
 
-    """Function for getting the RGB values for new eyes"""
+	"""Function for getting the RGB values for new eyes"""
 
-    try:
-        r=int(input("Enter value for red: "))
-        g=int(input("Enter value for green: "))
-        b=int(input("Enter value for blue: "))
-    except ValueError:
-        return (0,0,0)
-    #if the values aren't integers return a tuple with zeros
+	try:
+		r=int(input("Enter value for red: "))
+		g=int(input("Enter value for green: "))
+		b=int(input("Enter value for blue: "))
+	except ValueError:
+		return (0,0,0)
+	#if the values aren't integers return a tuple with zeros
 
-    r=repairValue(r)
-    g=repairValue(g)
-    b=repairValue(b)
-    #if the values are wrong corect them
+	repair=lambda value: max(min(value,255),0)
+	#create a clamp function to repair the values
 
-    return (b,g,r)
-    #return a tuple with BGR values
+	return (repair(b),repair(g),repair(r))
+	#if the values are wrong corect them and then return a tuple with BGR values
 
-def repairValue(value):
-
-    """Function that repair the values"""
-
-    if value>255:
-        return 255
-    elif value<0:
-        return 0
-    else:
-        return value
-    #if the value is wrong repair him, else return the value
-
-def constructThePath():
+def construct_the_path():
 
     """Function that construct the corect path for a python program"""
 
@@ -46,41 +32,36 @@ def main():
 
     """Main function of this program"""
 
-    def drawPupils(size):
+    def draw_pupils(size):
 
         """Function that draw the pupils on eyes"""
 
-        cv.circle(result,((leftEyePoints[1][0]+leftEyePoints[2][0])//2,
-        (leftEyePoints[1][1]+leftEyePoints[5][1])//2),size,(255,255,255),-1)
+        cv.circle(result,((leftEyePoints[1,0]+leftEyePoints[2,0])//2,
+        (leftEyePoints[1,1]+leftEyePoints[5,1])//2),size,(255,255,255),-1)
         #draw the left pupil
 
-        cv.circle(result,((rightEyePoints[1][0]+rightEyePoints[2][0])//2,
-        (rightEyePoints[1][1]+rightEyePoints[5][1])//2),size,(255,255,255),-1)
+        cv.circle(result,((rightEyePoints[1,0]+rightEyePoints[2,0])//2,
+        (rightEyePoints[1,1]+rightEyePoints[5,1])//2),size,(255,255,255),-1)
         #draw the right pupil
 
-    def setSizeForPupils(distance):
+    def set_size_for_pupils(distance):
 
         """Function that set the size of the pupils and draw them on eyes"""
 
-        if distance<=20:
-            drawPupils(1)
-        else:
-            drawPupils(2)
+        if distance<=20: draw_pupils(1)
+        else: draw_pupils(2)
         #if the distance is small draw some small pupils,
         #else draw some bigger pupils
 
-    path=constructThePath()
-    #set variable path to the path of the image
+    image=cv.imread(construct_the_path())
+    #read the image from the path
 
-    image=cv.imread(path)
-    #read the image
-
-    if image==None:
+    if image is None:
         print("Wrong path!!!")
         return
     #if the path is wrong print a error message and destroy the main function
 
-    color=getRGBValues()
+    color=get_RGB_values()
     #get the color for eyes
 
     detector=dlib.get_frontal_face_detector()
@@ -101,33 +82,16 @@ def main():
         landmark=predictor(grayImage,face)
         #set the landmark of the face
 
-        leftEyePoints=[]
-        rightEyePoints=[]
-        #set the lists for the points of eyes to empty lists
+        leftEyePoints=np.array([[landmark.part(i).x,landmark.part(i).y] for i in range(36,42)])
+        rightEyePoints=np.array([[landmark.part(i).x,landmark.part(i).y] for i in range(42,48)])
+        #create the lists with the points for eyes 
+        #and convert them to numpy arrays
 
-        for i in range(36,42):
-            x=landmark.part(i).x
-            y=landmark.part(i).y
-            leftEyePoints.append([x,y])
-        #complete the list with points of the left eye
-
-        for i in range(42,48):
-            x=landmark.part(i).x
-            y=landmark.part(i).y
-            rightEyePoints.append([x,y])
-        #complete the list with points of the right eye
-
-        leftEyePoints=np.array(leftEyePoints)
-        rightEyePoints=np.array(rightEyePoints)
-        #convert the list to numpy arrays
-
-        result=cv.fillPoly(image,[leftEyePoints],color)
+        result=cv.fillPoly(cv.fillPoly(image,[leftEyePoints],color),[rightEyePoints],color)
         #make the left eye to the given color
+        #and then make the right eye to the given color
 
-        result=cv.fillPoly(result,[rightEyePoints],color)
-        #make the right eye to the given color
-
-        setSizeForPupils(leftEyePoints[5][1]-leftEyePoints[1][1])
+        set_size_for_pupils(leftEyePoints[5,1]-leftEyePoints[1,1])
         #calculate the distance between the top point of the eye and the bottom
         #point of the eye and draw the pupil depending on the distance
 
